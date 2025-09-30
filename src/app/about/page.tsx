@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { Heart, Users, BookOpen, Play, Star, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -182,48 +182,10 @@ export default function AboutPage() {
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-border bg-card/50 backdrop-blur-sm mt-20">
-        <div className="container mx-auto px-4 py-12">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <h3 className="font-heading font-semibold text-lg mb-4">Mangoa</h3>
-              <p className="text-muted-foreground text-sm">
-                Your ultimate companion for tracking anime, manga, and light novels.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-heading font-medium mb-4">Platform</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="/browse" className="text-muted-foreground hover:text-foreground">Browse Series</Link></li>
-                <li><Link href="/dashboard" className="text-muted-foreground hover:text-foreground">Dashboard</Link></li>
-                <li><Link href="/contribute" className="text-muted-foreground hover:text-foreground">Contribute</Link></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-heading font-medium mb-4">Community</h4>
-              <ul className="space-y-2 text-sm">
-                <li><span className="text-muted-foreground">Discord (Coming Soon)</span></li>
-                <li><span className="text-muted-foreground">Forums (Coming Soon)</span></li>
-                <li><span className="text-muted-foreground">Blog (Coming Soon)</span></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="font-heading font-medium mb-4">Support</h4>
-              <ul className="space-y-2 text-sm">
-                <li><Link href="/contact" className="text-muted-foreground hover:text-foreground">Contact Us</Link></li>
-                <li><span className="text-muted-foreground">Help Center (Coming Soon)</span></li>
-                <li><span className="text-muted-foreground">API Docs (Coming Soon)</span></li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-border mt-8 pt-8 text-center">
-            <p className="text-muted-foreground text-sm">
-              © 2025 Mangoa. Built with john for the anime community.
-            </p>
-          </div>
-        </div>
-      </footer>
+      {/* global footer is rendered in layout */}
     </div>
   );
 }
+
+
+

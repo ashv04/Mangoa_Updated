@@ -114,7 +114,6 @@ export default function Header({
                   <Link href="/dashboard" className="flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground">
                     <div className="w-8 h-8 rounded-full bg-secondary/60 overflow-hidden flex items-center justify-center">
                       {avatarUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
                         <img src={avatarUrl} alt={displayName || "avatar"} className="w-full h-full object-cover" />
                       ) : (
                         <span className="text-xs">{(displayName || "U").slice(0,2).toUpperCase()}</span>

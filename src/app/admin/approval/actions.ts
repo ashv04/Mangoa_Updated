@@ -282,13 +282,13 @@ export async function approveSubmission(formData: FormData) {
     sub_seq: sub.sub_seq_b ?? null,
   });
 
-  const [content_unit_a_id, content_unit_b_id] =
+  const [content_unit_id_a, content_unit_id_b] =
     canonicalize(cuA, cuB, sub.relation_type);
 
   // INSERT mapping with service client
   const { error: insErr } = await svc.from("pairwise_mappings").insert({
-    content_unit_a_id,
-    content_unit_b_id,
+    content_unit_id_a,
+    content_unit_id_b,
     relation_type: sub.relation_type,
     confidence: sub.confidence ?? 0.7,
     notes: sub.notes ?? "",
@@ -387,8 +387,8 @@ export async function approveAllPendingSubmissions() {
       const [aId, bId] = canonicalize(cuA, cuB, sub.relation_type);
 
       await svc.from("pairwise_mappings").insert({
-        content_unit_a_id: aId,
-        content_unit_b_id: bId,
+        content_unit_id_a: aId,
+        content_unit_id_b: bId,
         relation_type: sub.relation_type,
         confidence: sub.confidence ?? 0.7,
         notes: sub.notes ?? "",
@@ -465,8 +465,8 @@ export async function unapproveSubmission(formData: FormData) {
     await svc
       .from("pairwise_mappings")
       .delete()
-      .eq("content_unit_a_id", aId)
-      .eq("content_unit_b_id", bId)
+      .eq("content_unit_id_a", aId)
+      .eq("content_unit_id_b", bId)
       .eq("relation_type", sub.relation_type);
   }
 

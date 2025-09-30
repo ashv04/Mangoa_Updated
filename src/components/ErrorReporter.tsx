@@ -1,17 +1,17 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef } from "react";
 
 type ReporterProps = {
-  /*  ⎯⎯ props are only provided on the global-error page ⎯⎯ */
+  /*  âŽ¯âŽ¯ props are only provided on the global-error page âŽ¯âŽ¯ */
   error?: Error & { digest?: string };
   reset?: () => void;
 };
 
 export default function ErrorReporter({ error, reset }: ReporterProps) {
-  /* ─ instrumentation shared by every route ─ */
+  // instrumentation shared by every route
   const lastOverlayMsg = useRef("");
-  const pollRef = useRef<NodeJS.Timeout>();
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     const inIframe = window.parent !== window;
@@ -72,7 +72,7 @@ export default function ErrorReporter({ error, reset }: ReporterProps) {
     };
   }, []);
 
-  /* ─ extra postMessage when on the global-error route ─ */
+  /* â”€ extra postMessage when on the global-error route â”€ */
   useEffect(() => {
     if (!error) return;
     window.parent.postMessage(
@@ -91,10 +91,10 @@ export default function ErrorReporter({ error, reset }: ReporterProps) {
     );
   }, [error]);
 
-  /* ─ ordinary pages render nothing ─ */
+  /* â”€ ordinary pages render nothing â”€ */
   if (!error) return null;
 
-  /* ─ global-error UI ─ */
+  /* â”€ global-error UI â”€ */
   return (
     <html>
       <body className="min-h-screen bg-background text-foreground flex items-center justify-center p-4">
@@ -134,3 +134,5 @@ export default function ErrorReporter({ error, reset }: ReporterProps) {
     </html>
   );
 }
+
+

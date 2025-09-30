@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Settings2, House, Clapperboard, IdCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -286,16 +287,16 @@ function NotFoundPage() {
         <CardContent className="space-y-4">
           <div className="flex flex-col sm:flex-row gap-3">
             <Button asChild className="flex-1">
-              <a href="/">
+              <Link href="/">
                 <House className="h-4 w-4 mr-2" />
                 Go Home
-              </a>
+              </Link>
             </Button>
             <Button variant="outline" asChild className="flex-1">
-              <a href="/browse">
+              <Link href="/browse">
                 <Clapperboard className="h-4 w-4 mr-2" />
                 Browse Series
-              </a>
+              </Link>
             </Button>
           </div>
           <p className="text-sm text-muted-foreground">

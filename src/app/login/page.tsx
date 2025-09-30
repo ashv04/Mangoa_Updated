@@ -1,11 +1,20 @@
 // src/app/login/page.tsx
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createSupabaseBrowser } from "@/lib/supabaseBrowser";
 
+// suspense wrapper to satisfy useSearchParams requirement
 export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="mx-auto max-w-md p-6">loading…</div>}>
+      <LoginContent />
+    </Suspense>
+  );
+}
+
+function LoginContent() {
   const supabase = useMemo(() => createSupabaseBrowser(), []);
   const router = useRouter();
   const params = useSearchParams();
@@ -17,7 +26,7 @@ export default function LoginPage() {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  // keep only if you didn't add a DB trigger to auto-create profiles
+  // keep only if there is no db trigger to auto create profiles
   async function upsertProfile() {
     try {
       await fetch("/api/profiles/upsert", { method: "POST" });
@@ -30,20 +39,35 @@ export default function LoginPage() {
     setErr(null);
 
     try {
-      // 1) Sign in / sign up in the browser
+      // sign in or sign up in the browser
       let session = null as any;
 
       if (mode === "signup") {
-        const { data, error } = await supabase.auth.signUp({ email, password });
+        const siteUrl =
+          process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${siteUrl}/auth/callback`,
+          },
+        });
         if (error) throw error;
-        session = data.session;
+        session = data.session; // may be null when email confirmation is required
       } else {
         const { data, error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
         session = data.session;
       }
 
-      // 2) Sync server cookies so Server Components (HeaderServer, /admin) see the session
+      // if email confirmation is required, ask user to check email
+      if (mode === "signup" && !session) {
+        setErr(null);
+        alert("Check your email to confirm your account. Then sign in.");
+        return;
+      }
+
+      // sync server cookies so rsc can see the session
       await fetch("/auth/refresh", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -53,7 +77,7 @@ export default function LoginPage() {
       // 3) (optional) ensure profile exists if you don't have a DB trigger
       await upsertProfile().catch(() => {});
 
-      // 4) Decide destination: admins/mods -> /admin/approval, others -> next
+      // route based on role. admins/mods to admin, others to next
       // After you POST to /auth/refresh and (optionally) upsertProfile()
       let dest = next;
       try {
@@ -66,10 +90,6 @@ export default function LoginPage() {
         /* fall back to `next` */
       }
 
-      router.replace(dest);
-      router.refresh();
-
-      // 5) Navigate and refresh so the header reflects the new auth/role state
       router.replace(dest);
       router.refresh();
     } catch (e: any) {

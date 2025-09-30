@@ -6,7 +6,7 @@ const navItems = [
   { href: "/", label: "Gallery" },
   { href: "/bento", label: "Bentos" },
   { href: "/casestudies", label: "Case Studies" },
-  { href: "/contacts", label: "Contact" },
+  { href: "/contact", label: "Contact" },
   { href: "/ctas", label: "CTAs" },
   { href: "/faqs", label: "FAQs" },
   { href: "/feature", label: "Features" },

@@ -14,34 +14,37 @@ export default function ContactPage() {
     name: "",
     email: "",
     subject: "",
-    message: ""
+    message: "",
   });
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: connect Supabase for form submission
-    // TODO: validate form data before submission
-    // TODO: store contact form submissions in database
-    
-    toast.success("Message sent! We'll get back to you soon! ✨", {
-      description: "Thanks for reaching out to our mangoa team!"
-    });
-    
-    // Reset form
-    setFormData({
-      name: "",
-      email: "",
-      subject: "",
-      message: ""
-    });
+    try {
+      const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Failed to send message");
+      }
+      toast.success("Message sent! We'll get back to you soon.", {
+        description: "Thanks for reaching out to the Mangoa team!",
+      });
+      setFormData({ name: "", email: "", subject: "", message: "" });
+    } catch (err: any) {
+      toast.error("Could not send your message.", {
+        description: err?.message || "Please try again.",
+      });
+    }
   };
 
   return (
@@ -58,8 +61,7 @@ export default function ContactPage() {
             <div className="absolute inset-0 border-2 border-teal/30 rounded-lg transform -rotate-1 -z-20"></div>
           </div>
           <p className="text-muted-foreground text-lg max-w-2xl mx-auto leading-relaxed">
-            Have a question, suggestion, or just want to chat about anime? 
-            We'd love to hear from you! Our team is always excited to connect with fellow anime enthusiasts.
+            Have a question, suggestion, or just want to chat about anime? We'd love to hear from you!
           </p>
         </div>
 
@@ -116,9 +118,8 @@ export default function ContactPage() {
                     name="subject"
                     value={formData.subject}
                     onChange={handleInputChange}
-                    placeholder="What's this about?"
+                    placeholder="What's this about? (optional)"
                     className="bg-input/50 border-border/50 focus:border-primary/50 transition-colors"
-                    required
                   />
                 </div>
 
@@ -131,15 +132,15 @@ export default function ContactPage() {
                     name="message"
                     value={formData.message}
                     onChange={handleInputChange}
-                    placeholder="Tell us what's on your mind... Favorite anime recommendations welcome! 🌸"
+                    placeholder="Tell us what's on your mind... Favorite anime recommendations welcome!"
                     rows={6}
                     className="bg-input/50 border-border/50 focus:border-primary/50 transition-colors resize-none"
                     required
                   />
                 </div>
 
-                <Button 
-                  type="submit" 
+                <Button
+                  type="submit"
                   className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-medium py-3 transition-all duration-200 hover:shadow-lg"
                 >
                   <Send className="h-4 w-4 mr-2" />
@@ -160,23 +161,17 @@ export default function ContactPage() {
                 <h3 className="font-heading text-lg font-semibold">Quick Contact</h3>
               </div>
               <div className="space-y-3 text-sm text-muted-foreground">
-                <p>
-                  For urgent matters or technical issues, you can also reach us directly at:
-                </p>
+                <p>For urgent matters or technical issues, you can also reach us directly at:</p>
                 <div className="bg-muted/30 rounded-lg p-3 border border-border/30">
                   <p className="font-mono text-foreground">support@mangoa.dev</p>
                 </div>
-                <p className="text-xs">
-                  We typically respond within 24 hours! 📧
-                </p>
+                <p className="text-xs">We typically respond within 24 hours!</p>
               </div>
             </div>
 
             {/* CTA Card */}
             <div className="bg-gradient-to-br from-primary/5 via-teal/5 to-accent/10 rounded-2xl shadow-cozy border border-border/50 p-6">
-              <h3 className="font-heading text-lg font-semibold mb-3">
-                New to our community?
-              </h3>
+              <h3 className="font-heading text-lg font-semibold mb-3">New to our community?</h3>
               <p className="text-sm text-muted-foreground mb-4">
                 Discover amazing anime series and join thousands of other fans tracking their favorites!
               </p>
@@ -200,7 +195,7 @@ export default function ContactPage() {
             <div className="relative">
               <div className="bg-gradient-to-r from-peach/20 to-lavender/20 rounded-lg p-4 border-2 border-dashed border-primary/20">
                 <p className="text-xs text-center text-muted-foreground font-medium">
-                  "The best anime recommendations come from passionate fans!" ✨
+                  "The best anime recommendations come from passionate fans!"
                 </p>
               </div>
               <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full animate-pulse"></div>
@@ -212,7 +207,7 @@ export default function ContactPage() {
         <div className="mt-16 pt-8 border-t border-border/30">
           <div className="text-center">
             <p className="text-sm text-muted-foreground">
-              Thanks for being part of our anime-loving community! 🌸
+              Thanks for being part of our anime-loving community!
             </p>
           </div>
         </div>
@@ -220,3 +215,4 @@ export default function ContactPage() {
     </div>
   );
 }
+

@@ -1,4 +1,3 @@
-import Footer from "@/components/Footer";
 import LandingSection from "@/components/LandingSection";
 
 export default function HomePage() {
@@ -8,9 +7,6 @@ export default function HomePage() {
       <main className="flex-1">
         <LandingSection />
       </main>
-
-      {/* Footer */}
-      <Footer />
     </div>
   );
 }

@@ -55,7 +55,6 @@ export function SearchBar({
     }, debounceMs);
 
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [value, isComposing, pathname, router, debounceMs]);
 
   const flushNow = React.useCallback(() => {

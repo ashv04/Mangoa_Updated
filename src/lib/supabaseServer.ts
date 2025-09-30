@@ -1,4 +1,4 @@
-// Server-side Supabase clients for RSC vs Server Actions
+// server supabase clients for rsc and server actions
 
 import { cookies } from "next/headers";
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
@@ -6,10 +6,7 @@ import { createServerClient, type CookieOptions } from "@supabase/ssr";
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-/**
- * Use inside Server Components (RSC) where cookies CANNOT be mutated.
- * Reads cookies only; set/remove are no-ops.
- */
+// rsc helper. reads cookies only
 export async function createSupabaseServer() {
   const cookieStore = await cookies(); // (async in some Next versions)
   return createServerClient(url, anon, {
@@ -22,10 +19,7 @@ export async function createSupabaseServer() {
     },
   });
 }
-
-/**
- * Use inside Server Actions / Route Handlers where cookies MAY be mutated.
- */
+// server actions and route handlers. can mutate cookies
 export async function createSupabaseServerAction() {
   const cookieStore = await cookies();
   return createServerClient(url, anon, {
@@ -37,7 +31,8 @@ export async function createSupabaseServerAction() {
         cookieStore.set({ name, value, ...options });
       },
       remove(name: string, options: CookieOptions) {
-        cookieStore.set({ name, value: "", ...options });
+        // expire cookie to ensure sign out is seen by rsc
+        cookieStore.set({ name, value: "", ...options, expires: new Date(0) });
       },
     },
   });

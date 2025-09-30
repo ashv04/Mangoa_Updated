@@ -11,12 +11,14 @@ import { SearchBar } from "@/components/SearchBar"
 
 export const dynamic = "force-dynamic"
 
+// badge styles by medium
 function badgeClasses(m: MediumType) {
   if (m === MediumType.ANIME) return "bg-teal/15 text-teal border-teal/30"
   if (m === MediumType.MANGA) return "bg-primary/15 text-primary border-primary/30"
   return "bg-accent/20 text-accent-foreground border-accent/30"
 }
 
+// small card for an adaptation
 function AdaptationCard({ a, slug }: { a: AdaptationRow; slug: string }) {
   return (
     <Link href={`/series/${slug}`} className="block focus:outline-none manga-focus">
@@ -33,6 +35,7 @@ function AdaptationCard({ a, slug }: { a: AdaptationRow; slug: string }) {
   )
 }
 
+// async content section
 async function DiscoverContent({ q }: { q?: string }) {
   const franchises = await fetchFranchisesWithAdaptations(48, q)
   const grouped: Record<MediumType, Array<{ a: AdaptationRow; slug: string }>> = {
@@ -40,13 +43,14 @@ async function DiscoverContent({ q }: { q?: string }) {
     [MediumType.MANGA]: [],
     [MediumType.LIGHT_NOVEL]: [],
   }
+
   for (const f of franchises) {
     for (const a of (f.adaptations || []) as FranchiseWithAdaptations["adaptations"]) {
       grouped[a.medium_type as MediumType].push({ a: a as AdaptationRow, slug: f.slug })
     }
   }
 
-  const tabs: Array<{ key: MediumType; label: string }> = [
+  const tabs: Array<{ key: MediumType; label: "anime" | "manga" | "light_novel" }> = [
     { key: MediumType.ANIME, label: "anime" },
     { key: MediumType.MANGA, label: "manga" },
     { key: MediumType.LIGHT_NOVEL, label: "light_novel" },
@@ -55,9 +59,9 @@ async function DiscoverContent({ q }: { q?: string }) {
   return (
     <Tabs defaultValue="anime" className="w-full">
       <TabsList className="mb-6">
-        <TabsTrigger value="anime">Anime</TabsTrigger>
-        <TabsTrigger value="manga">Manga</TabsTrigger>
-        <TabsTrigger value="light_novel">Light Novel</TabsTrigger>
+        <TabsTrigger value="anime">anime</TabsTrigger>
+        <TabsTrigger value="manga">manga</TabsTrigger>
+        <TabsTrigger value="light_novel">light novel</TabsTrigger>
       </TabsList>
 
       {tabs.map(({ key, label }) => {
@@ -66,7 +70,7 @@ async function DiscoverContent({ q }: { q?: string }) {
         const rest = items.slice(8, 28)
         return (
           <TabsContent key={label} value={label} className="space-y-8">
-            {/* Carousel */}
+            {/* carousel */}
             <div className="relative">
               <Carousel className="px-12">
                 <CarouselContent>
@@ -92,14 +96,14 @@ async function DiscoverContent({ q }: { q?: string }) {
                     ))
                   )}
                 </CarouselContent>
-                <CarouselPrevious aria-label="Previous" />
-                <CarouselNext aria-label="Next" />
+                <CarouselPrevious aria-label="previous" />
+                <CarouselNext aria-label="next" />
               </Carousel>
             </div>
 
             <Separator className="my-2" />
 
-            {/* Staggered Grid */}
+            {/* staggered grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 items-start">
               {rest.length ? (
                 rest.map(({ a, slug }, idx) => (
@@ -126,13 +130,13 @@ async function DiscoverContent({ q }: { q?: string }) {
               <div className="text-center text-muted-foreground">
                 {q ? (
                   <>
-                    No matches for “{q}”.
-                    <Link href="/discover" className="ml-2 underline">Clear search</Link>
+                    no matches
+                    <Link href="/discover" className="ml-2 underline">clear search</Link>
                   </>
                 ) : (
                   <>
-                    No items yet. Try browsing all series.
-                    <Link href="/browse" className="ml-2 underline">Go to Browse</Link>
+                    no items yet. try browse
+                    <Link href="/browse" className="ml-2 underline">go to browse</Link>
                   </>
                 )}
               </div>
@@ -144,28 +148,33 @@ async function DiscoverContent({ q }: { q?: string }) {
   )
 }
 
-export default async function DiscoverPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
-  const raw = searchParams?.q
+// page entry. next 15 passes searchParams as a promise
+export default async function DiscoverPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}) {
+  const raw = (await searchParams)?.q
   const q = typeof raw === "string" ? raw : Array.isArray(raw) ? raw[0] : undefined
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-purple-soft/20 to-teal-soft/20">
       <main className="container mx-auto px-4 py-8 space-y-10">
         <div className="text-center space-y-2">
-          <h1 className="font-heading text-4xl md:text-5xl font-bold">Discover</h1>
-          <p className="text-muted-foreground">Explore anime, manga, and light novels.</p>
+          <h1 className="font-heading text-4xl md:text-5xl font-bold">discover</h1>
+          <p className="text-muted-foreground">explore anime, manga, and light novels</p>
         </div>
         <div className="max-w-2xl mx-auto">
-          {/* client search bar with debounce; updates ?q= */}
-          <SearchBar placeholder="Search series..." initialValue={q || ""} />
+          {/* client search bar with debounce. updates ?q= */}
+          <SearchBar placeholder="search series..." initialValue={q || ""} />
         </div>
         <Suspense
           fallback={
             <div className="space-y-8">
               <Tabs defaultValue="anime">
                 <TabsList className="mb-6">
-                  <TabsTrigger value="anime">Anime</TabsTrigger>
-                  <TabsTrigger value="manga">Manga</TabsTrigger>
-                  <TabsTrigger value="light_novel">Light Novel</TabsTrigger>
+                  <TabsTrigger value="anime">anime</TabsTrigger>
+                  <TabsTrigger value="manga">manga</TabsTrigger>
+                  <TabsTrigger value="light_novel">light novel</TabsTrigger>
                 </TabsList>
                 {(["anime", "manga", "light_novel"] as const).map((v) => (
                   <TabsContent key={v} value={v} className="space-y-8">
@@ -188,7 +197,6 @@ export default async function DiscoverPage({ searchParams }: { searchParams: { [
             </div>
           }
         >
-          {/* @ts-expect-error Async Server Component */}
           <DiscoverContent q={q} />
         </Suspense>
       </main>

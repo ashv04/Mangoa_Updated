@@ -1,4 +1,4 @@
-import { createSupabaseServer } from "@/lib/supabaseServer"
+﻿import { createSupabaseServer } from "@/lib/supabaseServer"
 
 // Enums
 export enum MediumType {
@@ -57,8 +57,8 @@ export interface VolumeRow {
 
 export interface MappingRow {
   id: string
-  content_unit_a_id: string
-  content_unit_b_id: string
+  content_unit_id_a: string
+  content_unit_id_b: string
   relation_type: RelationType
   confidence: number
   status: StatusType
@@ -97,8 +97,8 @@ export interface RecentMapping {
   status: StatusType
   created_by_user_id: string
   created_at: string
-  content_unit_a_id: string
-  content_unit_b_id: string
+  content_unit_id_a: string
+  content_unit_id_b: string
 }
 
 export interface FetchAdaptationsParams {
@@ -150,12 +150,12 @@ export async function fetchAdaptationsPaginated({
     return { data: ((data || []) as any as AdaptationRow[]), count: count || 0 };
   }
 
-  // --- Search path: union of (title ilike) ∪ (franchise name ilike) ---
+  // --- Search path: union of (title ilike) âˆª (franchise name ilike) ---
   const like = `%${q.trim()}%`;
 
   // 1) title matches
   let titleQ = applyShared(supabase.from("adaptations")).ilike("title", like);
-  // 2) franchise matches → get matching franchise ids, then fetch adaptations IN (...)
+  // 2) franchise matches â†’ get matching franchise ids, then fetch adaptations IN (...)
   const { data: frHits, error: frErr } = await supabase
     .from("franchises")
     .select("id")
@@ -240,7 +240,7 @@ export async function fetchFranchiseBySlug(
     .eq("slug", slug)
     .maybeSingle();                 // <-- IMPORTANT
 
-  // 2) If not found, try a “namey” fallback (handles /series/one%20piece)
+  // 2) If not found, try a â€œnameyâ€ fallback (handles /series/one%20piece)
   if (!data) {
     const guess = decodeURIComponent(slug).replace(/\s+/g, " ").trim();
     const { data: alt } = await supabase
@@ -265,6 +265,38 @@ export async function fetchFranchiseBySlug(
   return (data as unknown as FranchiseWithAdaptations) ?? null;
 }
 
+// fetch franchises with nested adaptations
+// optional q filters by franchise name using ilike
+// returns up to limit ordered by recently updated
+export async function fetchFranchisesWithAdaptations(
+  limit = 48,
+  q?: string
+): Promise<FranchiseWithAdaptations[]> {
+  const supabase = await createSupabaseServer()
+
+  let qb = supabase
+    .from("franchises")
+    .select(
+      `id, canonical_name, slug, description, created_at, updated_at,
+       adaptations (
+         id, franchise_id, medium_type, title, language, metadata, updated_at, created_at
+       )`
+    )
+    .order("updated_at", { ascending: false })
+    .limit(limit)
+
+  if (q && q.trim()) {
+    qb = qb.ilike("canonical_name", `%${q.trim()}%`)
+  }
+
+  const { data, error } = await qb
+  if (error) {
+    console.error("Error fetching franchises with adaptations:", error)
+    return []
+  }
+  return ((data as unknown) as FranchiseWithAdaptations[]) || []
+}
+
 export async function fetchRecentMappings(limit = 10): Promise<RecentMapping[]> {
   const supabase = await createSupabaseServer()
   
@@ -277,8 +309,8 @@ export async function fetchRecentMappings(limit = 10): Promise<RecentMapping[]> 
       status,
       created_by_user_id,
       created_at,
-      content_unit_a_id,
-      content_unit_b_id
+      content_unit_id_a,
+      content_unit_id_b
     `)
     .order("created_at", { ascending: false })
     .limit(limit)
@@ -333,7 +365,7 @@ export async function fetchFranchisesByIds(ids: string[]): Promise<Record<string
 // TODO: Add adaptation thumbnail resolution
 // TODO: Add profile avatar URL resolution
 
-// … your existing enums/types/exports stay as-is …
+// â€¦ your existing enums/types/exports stay as-is â€¦
 
 /* ------------------------------------------------------------------ */
 /* View: franchise_mappings_flat                                      */
@@ -527,7 +559,7 @@ export async function fetchFranchiseMappingsBySlug(
 }
 
 /* ------------------------------------------------------------------ */
-/* Browse cards – franchises that have any approved mapping            */
+/* Browse cards â€“ franchises that have any approved mapping            */
 /* ------------------------------------------------------------------ */
 
 export interface MappedFranchiseCard {
@@ -610,3 +642,5 @@ export async function searchSite(q: string, limit = 20): Promise<UnifiedSearchRo
   }
   return (data as UnifiedSearchRow[]) ?? [];
 }
+
+

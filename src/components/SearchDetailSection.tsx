@@ -15,11 +15,37 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 
-// Mock hooks - TODO: connect Supabase
+// types for local mock state
+type SeriesMock = {
+  id: string;
+  title: string;
+  originalTitle: string;
+  coverUrl: string;
+  formats: string[];
+  studio: string;
+  author: string;
+  year: number;
+  status: string;
+  isFavorited: boolean;
+  isTracked: boolean;
+};
+
+type ProgressEntry = { current: number; total: number; lastUpdated: string | null };
+type UserProgressMock = { manga: ProgressEntry; anime: ProgressEntry; lightNovel: ProgressEntry };
+type ConvertResult = { result: number; confidence: "low" | "medium" | "high" };
+type ConversionForm = {
+  fromFormat: string;
+  fromNumber: string;
+  toFormat: string;
+  result: ConvertResult | null;
+  converting: boolean;
+};
+
+// mock hooks - todo: connect supabase
 const useSeries = (id: string) => {
   const [loading, setLoading] = useState(true);
-  const [series, setSeries] = useState(null);
-  const [userProgress, setUserProgress] = useState(null);
+  const [series, setSeries] = useState<SeriesMock | null>(null);
+  const [userProgress, setUserProgress] = useState<UserProgressMock | null>(null);
 
   // Simulate loading
   setTimeout(() => {
@@ -54,21 +80,46 @@ const useSeries = (id: string) => {
     toast.success(series?.isTracked ? "Stopped tracking" : "Started tracking");
   }, [series?.isTracked]);
 
-  const updateProgress = useCallback((format: string, value: number) => {
-    setUserProgress(prev => prev ? {
-      ...prev,
-      [format]: { ...prev[format], current: value, lastUpdated: new Date().toISOString().split('T')[0] }
-    } : null);
+  const updateProgress = useCallback((format: keyof UserProgressMock, value: number) => {
+    setUserProgress((prev) => {
+      if (!prev) return prev;
+      const today = new Date().toISOString().split("T")[0];
+      return {
+        ...prev,
+        [format]: {
+          ...prev[format],
+          current: value,
+          lastUpdated: today,
+        },
+      } as UserProgressMock;
+    });
     toast.success("Progress updated");
   }, []);
 
   return { loading, series, userProgress, toggleFavorite, toggleTracking, updateProgress };
 };
 
+// types for local mock mapping state
+type MappingItem = {
+  id: number;
+  fromFormat: string;
+  fromNumber: number;
+  toFormat: string;
+  toNumber: number;
+  contributor: string;
+  votes: number;
+};
+
+type TimelinePoint = {
+  position: number;
+  formats: { manga: number; anime: number };
+  alignment: "low" | "medium" | "high";
+};
+
 const useMappings = (seriesId: string) => {
   const [loading, setLoading] = useState(true);
-  const [mappings, setMappings] = useState([]);
-  const [timeline, setTimeline] = useState([]);
+  const [mappings, setMappings] = useState<MappingItem[]>([]);
+  const [timeline, setTimeline] = useState<TimelinePoint[]>([]);
 
   // Simulate loading
   setTimeout(() => {
@@ -86,14 +137,17 @@ const useMappings = (seriesId: string) => {
     ]);
   }, 1200);
 
-  const convert = useCallback((fromFormat: string, fromNumber: number, toFormat: string) => {
-    // TODO: Implement conversion logic
-    return { result: Math.floor(fromNumber * 0.7), confidence: "high" };
-  }, []);
+  const convert = useCallback(
+    (fromFormat: string, fromNumber: number, toFormat: string): { result: number; confidence: "low" | "medium" | "high" } => {
+      // todo: implement conversion logic
+      return { result: Math.floor(fromNumber * 0.7), confidence: "high" };
+    },
+    []
+  );
 
-  const submitMapping = useCallback((mapping: any) => {
-    // TODO: Submit to Supabase
-    toast.success("Mapping submitted successfully");
+  const submitMapping = useCallback((mapping: MappingItem) => {
+    // todo: submit to supabase
+    toast.success("mapping submitted successfully");
   }, []);
 
   return { loading, mappings, timeline, convert, submitMapping };
@@ -109,12 +163,12 @@ export default function SeriesDetailSection({ seriesId }: SeriesDetailSectionPro
   
   const [activeTab, setActiveTab] = useState("convert");
   const [showMappingModal, setShowMappingModal] = useState(false);
-  const [conversionForm, setConversionForm] = useState({
+  const [conversionForm, setConversionForm] = useState<ConversionForm>({
     fromFormat: "",
     fromNumber: "",
     toFormat: "",
     result: null,
-    converting: false
+    converting: false,
   });
 
   const handleConversion = useCallback(async () => {
@@ -124,12 +178,16 @@ export default function SeriesDetailSection({ seriesId }: SeriesDetailSectionPro
     
     // Simulate API call
     setTimeout(() => {
-      const result = convert(conversionForm.fromFormat, parseInt(conversionForm.fromNumber), conversionForm.toFormat);
-      setConversionForm(prev => ({ ...prev, result, converting: false }));
+      const result = convert(
+        conversionForm.fromFormat,
+        parseInt(conversionForm.fromNumber),
+        conversionForm.toFormat
+      );
+      setConversionForm((prev) => ({ ...prev, result, converting: false }));
     }, 800);
   }, [conversionForm.fromFormat, conversionForm.fromNumber, conversionForm.toFormat, convert]);
 
-  const incrementProgress = useCallback((format: string) => {
+  const incrementProgress = useCallback((format: keyof UserProgressMock) => {
     if (!userProgress?.[format]) return;
     const current = userProgress[format].current;
     const total = userProgress[format].total;
@@ -138,7 +196,7 @@ export default function SeriesDetailSection({ seriesId }: SeriesDetailSectionPro
     }
   }, [userProgress, updateProgress]);
 
-  const decrementProgress = useCallback((format: string) => {
+  const decrementProgress = useCallback((format: keyof UserProgressMock) => {
     if (!userProgress?.[format]) return;
     const current = userProgress[format].current;
     if (current > 0) {
@@ -497,7 +555,7 @@ export default function SeriesDetailSection({ seriesId }: SeriesDetailSectionPro
                   <p className="text-muted-foreground">Start tracking to see your progress</p>
                 </div>
               ) : (
-                Object.entries(userProgress).map(([format, progress]) => (
+                (Object.entries(userProgress) as Array<[keyof UserProgressMock, ProgressEntry]>).map(([format, progress]) => (
                   <div key={format} className="space-y-3">
                     <div className="flex items-center justify-between">
                       <h3 className="font-medium capitalize">{format.replace('lightnovel', 'Light Novel')}</h3>
@@ -600,7 +658,21 @@ export default function SeriesDetailSection({ seriesId }: SeriesDetailSectionPro
               </div>
             </div>
             
-            <Button onClick={() => { submitMapping({}); setShowMappingModal(false); }} className="w-full">
+            <Button
+              onClick={() => {
+                submitMapping({
+                  id: Date.now(),
+                  fromFormat: conversionForm.fromFormat || "Manga",
+                  fromNumber: parseInt(conversionForm.fromNumber || "1"),
+                  toFormat: conversionForm.toFormat || "Anime",
+                  toNumber: conversionForm.result?.result ?? 1,
+                  contributor: "you",
+                  votes: 0,
+                });
+                setShowMappingModal(false);
+              }}
+              className="w-full"
+            >
               Submit Mapping
             </Button>
           </div>
