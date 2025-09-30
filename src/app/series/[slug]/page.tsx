@@ -1,10 +1,10 @@
-// src/app/series/[slug]/page.tsx
+﻿// src/app/series/[slug]/page.tsx
 import Link from "next/link";
-import { Metadata } from "next";
+import type { Metadata } from "next";
 import {
   fetchFranchiseBySlug,
   fetchFranchiseMappingsBySlug,
-  FranchiseWithAdaptations,
+  type FranchiseWithAdaptations,
   MediumType,
   type PairKey,
 } from "@/lib/queries";
@@ -37,33 +37,34 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Book, Tv, FileText, Calendar, Clock, Eye, Link2 } from "lucide-react";
+import { TrackSeriesControls } from "@/components/TrackSeriesControls";
 
 const TABS: PairKey[] = ["anime-manga", "anime-light_novel", "manga-light_novel"];
-
 export const dynamic = "force-dynamic";
 
-/* ---------------- helpers ---------------- */
-
-function groupByMedium(adaptations: FranchiseWithAdaptations["adaptations"]) {
-  const groups: Record<MediumType, typeof adaptations> = {
+/* helpers */
+function groupByMedium(
+  adaptations: FranchiseWithAdaptations["adaptations"] | undefined,
+) {
+  const groups: Record<MediumType, NonNullable<typeof adaptations>> = {
     [MediumType.ANIME]: [],
     [MediumType.MANGA]: [],
     [MediumType.LIGHT_NOVEL]: [],
-  } as Record<MediumType, typeof adaptations>;
-  for (const a of adaptations || []) {
-    if (groups[a.medium_type as MediumType]) {
+  } as any;
+
+  for (const a of adaptations ?? []) {
+    if (a && groups[a.medium_type as MediumType]) {
       groups[a.medium_type as MediumType].push(a as any);
     }
   }
   return groups;
 }
 
-function show(v: unknown) {
-  return v === null || v === undefined || v === "" ? "—" : String(v);
+function safeShow(v: unknown) {
+  return v === null || v === undefined || v === "" ? "-" : String(v);
 }
 
-/* --------------- metadata ---------------- */
-
+/* metadata */
 export async function generateMetadata({
   params,
 }: {
@@ -77,8 +78,7 @@ export async function generateMetadata({
   };
 }
 
-/* ------------------ page ------------------ */
-
+/* page */
 export default async function SeriesBySlugPage({
   params,
 }: {
@@ -122,6 +122,7 @@ export default async function SeriesBySlugPage({
               <TabsTrigger value="manga">Manga</TabsTrigger>
               <TabsTrigger value="light_novel">Light Novel</TabsTrigger>
             </TabsList>
+
             {["anime", "manga", "light_novel"].map((key) => (
               <TabsContent key={key} value={key} className="space-y-3">
                 {Array.from({ length: 3 }).map((_, i) => (
@@ -143,14 +144,12 @@ export default async function SeriesBySlugPage({
     );
   }
 
-  const groups = groupByMedium(data.adaptations || []);
-
-  // Approved cross-media mappings (already grouped by helper)
+  const groups = groupByMedium(data.adaptations);
   const pairs = await fetchFranchiseMappingsBySlug(data.id, { by: "id" });
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Hero */}
+      {/* hero */}
       <div className="border-b border-purple-200 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950 dark:to-pink-950">
         <div className="container mx-auto px-4 py-8">
           <Breadcrumb>
@@ -176,7 +175,7 @@ export default async function SeriesBySlugPage({
           <div className="relative mt-4">
             <h1 className="font-heading text-4xl md:text-5xl font-bold text-foreground mb-2 relative">
               {data.canonical_name}
-              <div className="absolute -inset-2 border-2 border-purple-300/30 rounded-lg -z-10 transform rotate-1" />
+              <div className="absolute -inset-2 border-2 border-purple-300/30 rounded-lg -z-10 rotate-1" />
               <div className="absolute -inset-1 border border-purple-200/50 rounded-lg -z-10" />
             </h1>
             <p className="text-muted-foreground max-w-3xl">
@@ -186,7 +185,7 @@ export default async function SeriesBySlugPage({
         </div>
       </div>
 
-      {/* Content */}
+      {/* content */}
       <div className="container mx-auto px-4 py-8">
         <Tabs defaultValue="anime" className="w-full">
           <TabsList className="mb-4">
@@ -223,224 +222,235 @@ export default async function SeriesBySlugPage({
                     </p>
                   </div>
                 ) : (
-                  list.map((ad) => (
-                    <div
-                      key={ad.id}
-                      className="rounded-lg border bg-card p-4 manga-card panel-border"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <div>
-                          <h3 className="font-heading text-xl text-foreground">
-                            {ad.title}
-                          </h3>
-                          <div className="flex items-center gap-2 mt-2 flex-wrap">
-                            <Badge
-                              variant="secondary"
-                              className="rotate-[-1.5deg] bg-accent text-accent-foreground"
-                            >
-                              {ad.language || "N/A"}
-                            </Badge>
-                            <Badge className="bg-primary/15 text-primary border-primary/20">
-                              {key}
-                            </Badge>
-                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                              <Clock className="w-3 h-3" />
-                              {new Date(ad.updated_at).toLocaleDateString()}
+                  list.map((ad: any) => {
+                    const totalUnits = (() => {
+                      if (typeof ad.total_units === "number") return ad.total_units;
+                      if (typeof ad?.metadata?.total_units === "number")
+                        return ad.metadata.total_units;
+                      if (Array.isArray(ad.volumes)) return ad.volumes.length;
+                      return null;
+                    })();
+
+                    return (
+                      <div
+                        key={ad.id}
+                        className="rounded-lg border bg-card p-4 manga-card panel-border"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div>
+                            <h3 className="font-heading text-xl text-foreground">
+                              {ad.title}
+                            </h3>
+                            <div className="flex items-center gap-2 mt-2 flex-wrap">
+                              <Badge
+                                variant="secondary"
+                                className="rotate-[-1.5deg] bg-accent text-accent-foreground"
+                              >
+                                {ad.language || "N/A"}
+                              </Badge>
+                              <Badge className="bg-primary/15 text-primary border-primary/20">
+                                {key}
+                              </Badge>
+                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                                <Clock className="w-3 h-3" />
+                                {ad.updated_at
+                                  ? new Date(ad.updated_at).toLocaleDateString()
+                                  : "-"}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Eye className="w-4 h-4" />
-                          <span>
-                            Updated {new Date(ad.updated_at).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
 
-                      <Separator className="my-4" />
-
-                      {/* Volumes accordion (placeholder UI) */}
-                      <Accordion type="single" collapsible className="w-full">
-                        {(ad as any).volumes?.length ? (
-                          (ad as any).volumes.map((v: any) => (
-                            <AccordionItem
-                              key={v.id}
-                              value={v.id}
-                              className="border-muted/40"
-                            >
-                              <AccordionTrigger className="hover:no-underline group">
-                                <div className="flex items-center gap-3 flex-1">
-                                  <div className="flex items-center gap-2 flex-1">
-                                    <span className="font-medium text-foreground">
-                                      Vol. {v.volume_number}
-                                    </span>
-                                    <span className="text-muted-foreground truncate">
-                                      {v.title || "Untitled Volume"}
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                    <Calendar className="w-3 h-3" />
-                                    {v.release_date
-                                      ? new Date(v.release_date).toLocaleDateString()
-                                      : "TBA"}
-                                  </div>
-                                </div>
-                              </AccordionTrigger>
-                              <AccordionContent>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
-                                  {Array.from({ length: 6 }).map((_, i) => (
-                                    <HoverCard key={i}>
-                                      <HoverCardTrigger asChild>
-                                        <div className="p-4 rounded-lg border border-border/50 cursor-pointer bg-card/80 hover:bg-card transition-all duration-200 hover:border-primary/30 group">
-                                          <div className="flex items-center justify-between mb-2">
-                                            <div className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
-                                              Scene {i + 1}
-                                            </div>
-                                            <Badge variant="outline" className="text-xs">
-                                              Preview
-                                            </Badge>
-                                          </div>
-                                          <div className="text-xs text-muted-foreground">
-                                            Chapter {i + 1} • Page {i * 10 + 5}
-                                          </div>
-                                        </div>
-                                      </HoverCardTrigger>
-                                      <HoverCardContent
-                                        className="w-80 p-4"
-                                        align="start"
-                                        sideOffset={8}
-                                      >
-                                        <div className="space-y-3">
-                                          <div className="flex items-center justify-between">
-                                            <div className="text-sm font-semibold text-foreground">
-                                              Content Unit Details
-                                            </div>
-                                            <Badge variant="secondary" className="text-xs">
-                                              Scene
-                                            </Badge>
-                                          </div>
-                                          <div className="space-y-1 text-sm">
-                                            <div className="flex justify-between">
-                                              <span className="text-muted-foreground">
-                                                Type:
-                                              </span>
-                                              <span className="text-foreground">Scene</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                              <span className="text-muted-foreground">
-                                                Status:
-                                              </span>
-                                              <span className="text-foreground">Available</span>
-                                            </div>
-                                            <div className="flex justify-between">
-                                              <span className="text-muted-foreground">
-                                                Duration:
-                                              </span>
-                                              <span className="text-foreground">~5 min</span>
-                                            </div>
-                                          </div>
-                                          <Separator />
-                                          <p className="text-sm text-muted-foreground">
-                                            This scene contains dialogue and action sequences.
-                                            Preview content will be available once processing is
-                                            complete.
-                                          </p>
-                                        </div>
-                                      </HoverCardContent>
-                                    </HoverCard>
-                                  ))}
-                                </div>
-                              </AccordionContent>
-                            </AccordionItem>
-                          ))
-                        ) : (
-                          <div className="p-6 text-center">
-                            <Book className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
-                            <p className="text-muted-foreground">No volumes available yet.</p>
-                            <p className="text-sm text-muted-foreground mt-1">
-                              Volumes will appear here as they are added.
-                            </p>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Eye className="w-4 h-4" />
+                            <span>
+                              Updated{" "}
+                              {ad.updated_at
+                                ? new Date(ad.updated_at).toLocaleDateString()
+                                : "-"}
+                            </span>
                           </div>
-                        )}
-                      </Accordion>
-                    </div>
-                  ))
+                        </div>
+
+                        <div className="mt-4">
+                          <TrackSeriesControls
+                            adaptationId={ad.id}
+                            title={ad.title}
+                            format={ad.medium_type as any}
+                            totalUnits={totalUnits}
+                          />
+                        </div>
+
+                        <Separator className="my-4" />
+
+                        {/* volumes accordion */}
+                        <Accordion type="single" collapsible className="w-full">
+                          {Array.isArray(ad.volumes) && ad.volumes.length ? (
+                            ad.volumes.map((v: any) => (
+                              <AccordionItem
+                                key={v.id}
+                                value={String(v.id)}
+                                className="border-muted/40"
+                              >
+                                <AccordionTrigger className="hover:no-underline group">
+                                  <div className="flex items-center gap-3 flex-1">
+                                    <div className="flex items-center gap-2 flex-1">
+                                      <span className="font-medium text-foreground">
+                                        Vol. {v.volume_number}
+                                      </span>
+                                      <span className="text-muted-foreground truncate">
+                                        {v.title || "Untitled Volume"}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                      <Calendar className="w-3 h-3" />
+                                      {v.release_date
+                                        ? new Date(v.release_date).toLocaleDateString()
+                                        : "TBA"}
+                                    </div>
+                                  </div>
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-4">
+                                    {Array.from({ length: 6 }).map((_, i) => (
+                                      <HoverCard key={i}>
+                                        <HoverCardTrigger asChild>
+                                          <div className="p-4 rounded-lg border border-border/50 cursor-pointer bg-card/80 hover:bg-card transition-all duration-200 hover:border-primary/30 group">
+                                            <div className="flex items-center justify-between mb-2">
+                                              <div className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                                                Scene {i + 1}
+                                              </div>
+                                              <Badge variant="outline" className="text-xs">
+                                                Preview
+                                              </Badge>
+                                            </div>
+                                            <div className="text-xs text-muted-foreground">
+                                              Chapter {i + 1} • Page {i * 10 + 5}
+                                            </div>
+                                          </div>
+                                        </HoverCardTrigger>
+                                        <HoverCardContent
+                                          className="w-80 p-4"
+                                          align="start"
+                                          sideOffset={8}
+                                        >
+                                          <div className="space-y-3">
+                                            <div className="flex items-center justify-between">
+                                              <div className="text-sm font-semibold text-foreground">
+                                                Content Unit Details
+                                              </div>
+                                              <Badge variant="secondary" className="text-xs">
+                                                Scene
+                                              </Badge>
+                                            </div>
+                                            <div className="space-y-1 text-sm">
+                                              <div className="flex justify-between">
+                                                <span className="text-muted-foreground">
+                                                  Type:
+                                                </span>
+                                                <span className="text-foreground">Scene</span>
+                                              </div>
+                                              <div className="flex justify-between">
+                                                <span className="text-muted-foreground">
+                                                  Status:
+                                                </span>
+                                                <span className="text-foreground">Available</span>
+                                              </div>
+                                              <div className="flex justify-between">
+                                                <span className="text-muted-foreground">
+                                                  Duration:
+                                                </span>
+                                                <span className="text-foreground">~5 min</span>
+                                              </div>
+                                            </div>
+                                            <Separator />
+                                            <p className="text-sm text-muted-foreground">
+                                              This scene contains dialogue and action sequences.
+                                              Preview content will be available once processing is
+                                              complete.
+                                            </p>
+                                          </div>
+                                        </HoverCardContent>
+                                      </HoverCard>
+                                    ))}
+                                  </div>
+                                </AccordionContent>
+                              </AccordionItem>
+                            ))
+                          ) : (
+                            <div className="p-6 text-center">
+                              <Book className="w-12 h-12 mx-auto mb-3 text-muted-foreground opacity-50" />
+                              <p className="text-muted-foreground">No volumes available yet.</p>
+                              <p className="text-sm text-muted-foreground mt-1">
+                                Volumes will appear here as they are added.
+                              </p>
+                            </div>
+                          )}
+                        </Accordion>
+                      </div>
+                    );
+                  })
                 )}
               </TabsContent>
             );
           })}
         </Tabs>
 
-        {/* Approved cross-media mappings */}
+        {/* approved cross-media mappings */}
         <div className="mt-12">
           <div className="flex items-center gap-2 mb-3">
             <Link2 className="w-4 h-4 text-muted-foreground" />
-            <h2 className="text-xl font-semibold">
-              Cross-Media Mappings (Approved)
-            </h2>
+            <h2 className="text-xl font-semibold">Cross-Media Mappings (Approved)</h2>
           </div>
 
           {!pairs ||
-          (!pairs.groups["anime-manga"].length &&
-            !pairs.groups["anime-light_novel"].length &&
-            !pairs.groups["manga-light_novel"].length) ? (
+          (!pairs.groups["anime-manga"]?.length &&
+            !pairs.groups["anime-light_novel"]?.length &&
+            !pairs.groups["manga-light_novel"]?.length) ? (
             <p className="text-muted-foreground">No approved mappings yet.</p>
           ) : (
             <Tabs
               defaultValue={
-                pairs.groups["anime-manga"].length
+                pairs.groups["anime-manga"]?.length
                   ? "anime-manga"
-                  : pairs.groups["anime-light_novel"].length
+                  : pairs.groups["anime-light_novel"]?.length
                   ? "anime-light_novel"
                   : "manga-light_novel"
               }
             >
               <TabsList className="mb-4">
-                <TabsTrigger value="anime-manga">Anime ↔ Manga</TabsTrigger>
-                <TabsTrigger value="anime-light_novel">
-                  Anime ↔ Light Novel
-                </TabsTrigger>
-                <TabsTrigger value="manga-light_novel">
-                  Manga ↔ Light Novel
-                </TabsTrigger>
+                <TabsTrigger value="anime-manga">Anime + Manga</TabsTrigger>
+                <TabsTrigger value="anime-light_novel">Anime + Light Novel</TabsTrigger>
+                <TabsTrigger value="manga-light_novel">Manga + Light Novel</TabsTrigger>
               </TabsList>
 
-              {(TABS as PairKey[]).map((key: PairKey) => (
+              {TABS.map((key) => (
                 <TabsContent key={key} value={key} className="space-y-3">
-                  {pairs.groups[key].length === 0 ? (
+                  {!pairs.groups[key]?.length ? (
                     <p className="text-sm text-muted-foreground">No mappings yet.</p>
                   ) : (
                     <ul className="space-y-3">
-                      {pairs.groups[key].map((m) => {
-                        const when =
-                          m.created_at ? new Date(m.created_at).toLocaleString() : "—";
+                      {pairs.groups[key].map((m: any) => {
+                        const when = m.created_at
+                          ? new Date(m.created_at).toLocaleString()
+                          : "—";
                         const conf =
-                          typeof m.confidence === "number" ? m.confidence.toFixed(2) : "—";
-
+                          typeof m.confidence === "number"
+                            ? m.confidence.toFixed(2)
+                            : "—";
                         const aSeg =
                           m.a.seq != null
                             ? `${m.a.kind === "episode" ? "Ep" : "Ch"} ${m.a.seq}`
-                            : "";
+                            : "—";
                         const bSeg =
                           m.b.seq != null
                             ? `${m.b.kind === "episode" ? "Ep" : "Ch"} ${m.b.seq}`
-                            : "";
-
-                        const aLabel = [
-                          m.a.adaptation_title,
-                          m.a.volume ? `Vol ${m.a.volume}` : "",
-                          aSeg,
-                        ]
+                            : "—";
+                        const aLabel = [m.a.adaptation_title, m.a.volume ? `Vol ${m.a.volume}` : "—", aSeg]
                           .filter(Boolean)
-                          .join(" • ");
-
-                        const bLabel = [
-                          m.b.adaptation_title,
-                          m.b.volume ? `Vol ${m.b.volume}` : "",
-                          bSeg,
-                        ]
+                          .join(" · ");
+                        const bLabel = [m.b.adaptation_title, m.b.volume ? `Vol ${m.b.volume}` : "—", bSeg]
                           .filter(Boolean)
-                          .join(" • ");
+                          .join(" · ");
 
                         return (
                           <li
@@ -472,7 +482,6 @@ export default async function SeriesBySlugPage({
                   )}
                 </TabsContent>
               ))}
-
             </Tabs>
           )}
         </div>
@@ -489,3 +498,4 @@ export default async function SeriesBySlugPage({
     </div>
   );
 }
+

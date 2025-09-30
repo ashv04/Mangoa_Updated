@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
 import { fetchFranchisesWithAdaptations, MediumType, type FranchiseWithAdaptations, type AdaptationRow } from "@/lib/queries"
 import { SearchBar } from "@/components/SearchBar"
+import { resolveImagesForTitle } from "@/lib/imageResolver"
 
 export const dynamic = "force-dynamic"
 
@@ -19,10 +20,15 @@ function badgeClasses(m: MediumType) {
 }
 
 // small card for an adaptation
-function AdaptationCard({ a, slug }: { a: AdaptationRow; slug: string }) {
+function AdaptationCard({ a, slug, coverUrl }: { a: AdaptationRow; slug: string; coverUrl?: string | null }) {
   return (
     <Link href={`/series/${slug}`} className="block focus:outline-none manga-focus">
       <Card className="manga-card panel-border h-full transition will-change-transform">
+        {coverUrl && (
+          <div className="h-40 w-full overflow-hidden rounded-t-md">
+            <img src={coverUrl} alt={a.title} className="w-full h-full object-cover" />
+          </div>
+        )}
         <CardHeader className="pb-2">
           <CardTitle className="text-base line-clamp-1">{a.title}</CardTitle>
         </CardHeader>
@@ -49,6 +55,19 @@ async function DiscoverContent({ q }: { q?: string }) {
       grouped[a.medium_type as MediumType].push({ a: a as AdaptationRow, slug: f.slug })
     }
   }
+
+  // resolve cover images for top items in each tab to keep calls light
+  const tops: Array<{ a: AdaptationRow; slug: string }> = []
+  for (const key of [MediumType.ANIME, MediumType.MANGA, MediumType.LIGHT_NOVEL] as const) {
+    tops.push(...grouped[key].slice(0, 8))
+  }
+  const coverById = new Map<string, string | null>()
+  await Promise.all(
+    tops.map(async ({ a }) => {
+      const res = await resolveImagesForTitle(a.title, a.medium_type === MediumType.ANIME ? "anime" : "manga")
+      coverById.set(a.id, res.cover)
+    })
+  )
 
   const tabs: Array<{ key: MediumType; label: "anime" | "manga" | "light_novel" }> = [
     { key: MediumType.ANIME, label: "anime" },
@@ -77,7 +96,7 @@ async function DiscoverContent({ q }: { q?: string }) {
                   {top.length ? (
                     top.map(({ a, slug }) => (
                       <CarouselItem key={a.id} className="basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
-                        <AdaptationCard a={a} slug={slug} />
+                        <AdaptationCard a={a} slug={slug} coverUrl={coverById.get(a.id)} />
                       </CarouselItem>
                     ))
                   ) : (
@@ -106,9 +125,9 @@ async function DiscoverContent({ q }: { q?: string }) {
             {/* staggered grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 items-start">
               {rest.length ? (
-                rest.map(({ a, slug }, idx) => (
-                  <div key={a.id} className={idx % 3 === 0 ? "translate-y-1" : idx % 3 === 1 ? "-translate-y-1" : "translate-y-0"}>
-                    <AdaptationCard a={a} slug={slug} />
+                rest.map(({ a, slug }) => (
+                  <div key={a.id}>
+                    <AdaptationCard a={a} slug={slug} coverUrl={coverById.get(a.id)} />
                   </div>
                 ))
               ) : (

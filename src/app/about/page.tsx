@@ -6,26 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-bg-gradient-start to-bg-gradient-end">
-      {/* Header */}
-      <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="font-heading font-bold text-xl text-primary">
-            Mangoa
-          </Link>
-          <nav className="flex items-center gap-6">
-            <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors">
-              Home
-            </Link>
-            <Link href="/browse" className="text-muted-foreground hover:text-foreground transition-colors">
-              Browse
-            </Link>
-            <Link href="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
-              Dashboard
-            </Link>
-          </nav>
-        </div>
-      </header>
-
       {/* Main Content */}
       <main className="container mx-auto px-4 py-12 max-w-6xl">
         {/* Hero Section */}
